@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# PyTorch
+*.pth
+*.pt
+
+# Models & Outputs
+output_dir/
+output_pretrain/
+*.bin
+*.safetensors
+checkpoint-*/
+logs/
+
+# IDEs
+.vscode/
+.idea/
+
+# System
+.DS_Store
