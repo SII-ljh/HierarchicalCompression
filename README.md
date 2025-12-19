@@ -1,48 +1,66 @@
-# ICAE - In-Context Autoencoder Project
+# Hierarchical Compression (Context-Hierarchical-Compression)
 
-这一个基于 ICAE (In-Context Autoencoder) 的改进项目。ICAE 旨在通过将长上下文压缩到有限的记忆槽 (Memory Slots) 中，使大语言模型能够处理超长输入。
+## 📌 项目愿景 (Project Vision)
 
-## 📁 核心文件说明
+本项目旨在基于 **ICAE (In-Context Autoencoder)** 的思想，探索和实现**层级化上下文压缩 (Hierarchical Context Compression)**。
 
-- **`modeling_icae_multi_span.py`**
-  核心模型定义。在 Mistral 等基座模型上扩展了词表，增加了记忆 Token，并实现了压缩（编码）和重建/生成（解码）的前向传播逻辑。支持 LoRA 微调。
+我们的核心目标是通过多级记忆压缩机制，打破当前大语言模型的上下文长度限制，实现更高效的超长文本理解与生成。
 
-- **`pretrain.py`**
-  预训练脚本。执行自编码任务（压缩->重建）和语言建模任务。
-  - **用法**: `python pretrain.py --train_file train.jsonl --validation_file eval.jsonl ...`
+### 核心变更 (Key Changes)
+- **基座模型**: 全面迁移至 **Qwen (千问)** 系列 (如 Qwen2.5/Qwen3)，替代原论文中的 Mistral/Llama。选择 Qwen 是因其在长文本和中文理解上的卓越性能。
+- **技术路线**:
+  1.  **Phase 1**: 复现并适配 ICAE 到 Qwen 模型。
+  2.  **Phase 2**: 实现**层级压缩**架构 (Hierarchical Compression)，支持递归式的上下文编码。
+  3.  **Phase 3**: 针对超长文本任务进行微调和优化。
 
-- **`instruction_finetune.py`**
-  指令微调脚本。在预训练基础上，让模型学会根据 Input 和 Prompt 利用记忆 Token 回答问题。
+---
 
-- **`training_utils.py`**
-  数据处理工具。包含针对预训练和微调的 Tokenization 逻辑（注意：包含针对特定 Token ID 的处理，如迁移模型需修改）。
+## 📂 项目结构 (Structure)
 
-## 🚀 快速开始
+目前代码库处于 **Adaptation Phase**（适配阶段），主要包含从 ICAE v2 迁移来的核心逻辑。
+
+- **`modeling_icae_multi_span.py`**: 
+  - 核心模型定义。
+  - **TODO**: 需要适配 Qwen 的词表和特殊 Token (BOS/EOS/Chat Templates)。
+  - **Goal**: 实现支持层级输入的 `HierarchicalICAE` 类。
+
+- **`training_utils.py`**:
+  - 数据处理与 Tokenization。
+  - **TODO**: 移除针对 Mistral 的硬编码 Token ID，改为 Qwen 的动态各类 Chat Template 处理。
+
+- **`pretrain.py` & `instruction_finetune.py`**:
+  - 预训练与指令微调脚本。
+  - 支持自定义数据路径 (JSONL)。
+
+---
+
+## 🚀 快速开始 (Quick Start)
 
 ### 1. 环境准备
 ```bash
 pip install torch transformers peft datasets
 ```
 
-### 2. 数据准备
-准备 JSONL 格式的数据：
-- **预训练**: `{"text": "长文本..."}`
-- **微调**: `{"input": "背景...", "prompt": "问题...", "answer": "答案..."}`
+### 2. 预训练 (Pre-training)
+目前脚本支持自定义数据路径，但请注意**基座模型适配**尚未完全完成。
 
-### 3. 运行预训练
 ```bash
+# 示例命令 (迁移完成后)
 python pretrain.py \
-    --model_name_or_path mistralai/Mistral-7B-v0.1 \
-    --output_dir ./output_pretrain \
+    --model_name_or_path Qwen/Qwen2.5-7B-Instruct \
+    --output_dir ./output_hierarchical_qwen \
     --train_file ./data/train.jsonl \
     --validation_file ./data/eval.jsonl \
     --fixed_mem_size 128 \
     --lora_r 128
 ```
 
-## ⚠️ 兼容性说明 (Qwen/Llama)
-本项目默认配置适配 **Mistral-7B-v0.1**。
-若要迁移到 **Qwen** 或 **Llama-3**，请务必修改 `training_utils.py` 中的 Chat 模板特殊 Token ID，以及 `modeling_icae_multi_span.py` 中的 BOS/EOS ID 定义。
+## ⚠️ 迁移指南 (Migration Guide)
 
-## 🔗 参考
-原始 ICAE 项目: [GitHub Link]
+如果您正在参与开发，请重点关注以下迁移工作：
+
+1.  **Token ID 修复**: 检查 `training_utils.py`，将 `[1, 733...]` 等 Mistral 特定 ID 替换为 Qwen 的 `tokenizer.apply_chat_template` 逻辑。
+2.  **特殊 Token**: 确认 `modeling_icae_multi_span.py` 中的 `bos_id`, `eos_id` 是否自动获取自 Qwen Tokenizer。
+
+---
+*Based on ICAE, evolving towards Infinite Context with Qwen.*
